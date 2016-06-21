@@ -1,0 +1,18 @@
+apply plugin: 'java'
+
+repositories {
+  jcenter()
+  mavenCentral()
+  maven {
+    url "http://nexus.htrc.illinois.edu/content/groups/public/"
+  }
+}
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+  compile 'org.slf4j:slf4j-api:1.7.18'
+  compile 'org.slf4j:slf4j-log4j:1..7.18'
+  compile "com.sparkjava:spark-core:2.5"
+  compile "gov.loc:pairtree:1.1.2"
+  testCompile 'junit:junit:4.12'
+}
