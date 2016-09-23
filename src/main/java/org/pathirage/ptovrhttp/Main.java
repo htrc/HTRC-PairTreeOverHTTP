@@ -53,7 +53,7 @@ public class Main {
       VolumesRequest requestedVolumes = gson.fromJson(request.body(), VolumesRequest.class);
       for (String vol : requestedVolumes.getVolumes()) {
         String[] volSplits = vol.split("\\.");
-        String volId = volSplits[1];
+        String volId = pairtree.cleanId(volSplits[1]);
         String library = volSplits[0].trim();
 
         if (volSplits.length > 2) {
