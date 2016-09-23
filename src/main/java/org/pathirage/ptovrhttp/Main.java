@@ -52,23 +52,12 @@ public class Main {
       List<String> volumeZips = new ArrayList<String>();
       VolumesRequest requestedVolumes = gson.fromJson(request.body(), VolumesRequest.class);
       for (String vol : requestedVolumes.getVolumes()) {
-        String[] volSplits = vol.split("\\.");
-        String volId = pairtree.cleanId(volSplits[1]);
-        String library = volSplits[0].trim();
-
-        if (volSplits.length > 2) {
-          response.status(400);
-          return "Malformed volume id " + vol;
-        }
-
-        List<String> volIdSplits = new ArrayList<String>();
-
-        for (int i = 0; i < volId.length(); i += 2) {
-          volIdSplits.add(volId.substring(i, i + 2));
-        }
-
-        volumeZips.add(String.format("%s/%s/pairtree_root/%s/%s/%s.zip", options.pairTreeRoot, library, Joiner.on("/").join(volIdSplits), volId, volId));
-      }
+        int indexOfFirstPeriod = vol.indexOf('.');
+        String volId = pairtree.cleanId(vol.substring(indexOfFirstPeriod + 1));
+        String library = vol.substring(0, indexOfFirstPeriod);
+        volumeZips.add(String.format("%s/%s/pairtree_root/%s/%s/%s.zip", options.pairTreeRoot, library, Joiner.on("/").join(volId.split("(?<=\\G.{2})")), volId, volId));
+       }
+      
       File zip = ZipUtil.zip(volumeZips);
       response.header("Content-Disposition", String.format("attachment; filename=\"%s\"", zip.getName()));
       response.type(MediaType.ZIP.toString());
