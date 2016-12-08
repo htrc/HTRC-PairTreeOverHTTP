@@ -23,12 +23,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ZipUtil {
-  public static File zip(List<String> srcFiles) throws IOException {
+  public static ZipOutputStream zip(List<String> srcFiles, OutputStream os) throws IOException {
     // create byte buffer
     byte[] buffer = new byte[1024];
-    File temp = Files.createTempFile("volumes-", ".zip").toFile();
-    FileOutputStream fos = new FileOutputStream(temp);
-    ZipOutputStream zos = new ZipOutputStream(fos);
+    ZipOutputStream zos = new ZipOutputStream(os);
 
     for (String f : srcFiles) {
       File srcFile = new File(f);
@@ -44,9 +42,6 @@ public class ZipUtil {
       fis.close();
     }
 
-    // close the ZipOutputStream
-    zos.close();
-    return temp;
-
+    return zos;
   }
 }

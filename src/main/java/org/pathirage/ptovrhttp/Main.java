@@ -23,17 +23,17 @@ import com.google.gson.Gson;
 import gov.loc.repository.pairtree.Pairtree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.utils.IOUtils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
-import static spark.Spark.port;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 public class Main {
   private static Logger log = LoggerFactory.getLogger(Main.class);
@@ -47,29 +47,55 @@ public class Main {
 
     log.info("Starting PairTreeOverHTTP with pairtree root: " + options.pairTreeRoot);
 
-    port(8080);
+    port(options.port);
     post("/volumes", "application/json", (request, response) -> {
-      List<String> volumeZips = new ArrayList<String>();
-      VolumesRequest requestedVolumes = gson.fromJson(request.body(), VolumesRequest.class);
-      for (String vol : requestedVolumes.getVolumes()) {
-        int indexOfFirstPeriod = vol.indexOf('.');
-        String volId = pairtree.cleanId(vol.substring(indexOfFirstPeriod + 1));
-        String library = vol.substring(0, indexOfFirstPeriod);
-        volumeZips.add(String.format("%s/%s/pairtree_root/%s/%s/%s.zip", options.pairTreeRoot, library, Joiner.on("/").join(volId.split("(?<=\\G.{2})")), volId, volId));
-       }
-      
-      File zip = ZipUtil.zip(volumeZips);
-      response.header("Content-Disposition", String.format("attachment; filename=\"%s\"", zip.getName()));
-      response.type(MediaType.ZIP.toString());
-      response.raw().setContentLength((int)zip.length());
-      response.status(200);
+      try {
+        List<String> volumeZips = new ArrayList<String>();
+        VolumesRequest requestedVolumes = gson.fromJson(request.body(), VolumesRequest.class);
+        for (String vol : requestedVolumes.getVolumes()) {
+          int indexOfFirstPeriod = vol.indexOf('.');
 
-      OutputStream out = response.raw().getOutputStream();
-      InputStream in = new FileInputStream(zip);
-      IOUtils.copy(in, out);
-      out.close();
-      in.close();
-      return null;
+          String volId;
+          if (!requestedVolumes.isClean()) {
+            volId = pairtree.cleanId(vol.substring(indexOfFirstPeriod + 1));
+          } else {
+            volId = vol.substring(indexOfFirstPeriod + 1);
+          }
+
+          String library = vol.substring(0, indexOfFirstPeriod);
+          volumeZips.add(String.format("%s/%s/pairtree_root/%s/%s/%s.zip", options.pairTreeRoot, library, Joiner.on("/").join(volId.split("(?<=\\G.{2})")), volId, volId));
+        }
+
+        response.header("Content-Disposition", String.format("attachment; filename=\"%s\"", "volumes.zip"));
+        response.type(MediaType.ZIP.toString());
+        response.status(200);
+
+        ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(response.raw().getOutputStream()));
+        zos.setMethod(ZipOutputStream.DEFLATED);
+        zos.setLevel(0);
+        byte[] buffer = new byte[1024];
+
+        for (String f : volumeZips) {
+          File srcFile = new File(f);
+          try (BufferedInputStream fis = new BufferedInputStream(new FileInputStream(f))) {
+            // begin writing a new ZIP entry, positions the stream to the start of the entry data
+            zos.putNextEntry(new ZipEntry(srcFile.getName()));
+            int length;
+            while ((length = fis.read(buffer)) > 0) {
+              zos.write(buffer, 0, length);
+            }
+            zos.closeEntry();
+          }
+        }
+
+        zos.flush();
+        zos.close();
+      } catch (Exception e) {
+        log.error("Cannot create zip.", e);
+        halt(405, "Server Error: " + e.getMessage());
+      }
+
+      return response.raw();
     });
   }
 }

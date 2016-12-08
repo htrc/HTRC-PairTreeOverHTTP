@@ -16,10 +16,23 @@
 
 package org.pathirage.ptovrhttp;
 
+import com.google.gson.Gson;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class VolumesRequest {
   public List<String> volumes;
+
+  public boolean clean;
+
+  public boolean isClean() {
+    return clean;
+  }
+
+  public void setClean(boolean clean) {
+    this.clean = clean;
+  }
 
   public List<String> getVolumes() {
     return volumes;
@@ -27,5 +40,19 @@ public class VolumesRequest {
 
   public void setVolumes(List<String> volumes) {
     this.volumes = volumes;
+  }
+
+  public static void main(String[] args) {
+    Gson gson = new Gson();
+
+    List<String> vols = new ArrayList<>();
+    vols.add("sjksksks");
+    vols.add("sksksdd");
+
+    VolumesRequest v = new VolumesRequest();
+    v.setVolumes(vols);
+    v.setClean(false);
+
+    System.out.println(gson.toJson(v));
   }
 }

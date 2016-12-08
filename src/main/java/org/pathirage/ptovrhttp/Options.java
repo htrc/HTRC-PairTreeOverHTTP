@@ -19,6 +19,9 @@ package org.pathirage.ptovrhttp;
 import com.beust.jcommander.Parameter;
 
 public class Options {
-  @Parameter(names = {"--pairtree-root", "-pr"}, description = "Root directory containing the pairtree.", required = true)
+  @Parameter(names = {"--pairtree-root", "-r"}, description = "Root directory containing the pairtree.", required = true)
   public String pairTreeRoot;
+
+  @Parameter(names = {"--port", "-p"}, description = "REST API port")
+  public int port = 8080;
 }
